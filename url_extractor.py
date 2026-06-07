@@ -152,9 +152,30 @@ def resolve_with_playwright(url: str, timeout_ms: int, target_domain: str) -> di
     try:
         from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
+        try:
+            from playwright_stealth import stealth_sync
+            _stealth = stealth_sync
+        except ImportError:
+            _stealth = None
+
         with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=True)
-            page = browser.new_page()
+            browser = pw.chromium.launch(
+                headless=True,
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-sandbox",
+                ],
+            )
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                           "AppleWebKit/537.36 (KHTML, like Gecko) "
+                           "Chrome/124.0.0.0 Safari/537.36",
+                locale="en-US",
+                viewport={"width": 1280, "height": 800},
+            )
+            page = context.new_page()
+            if _stealth:
+                _stealth(page)
 
             found_target: list[str] = []
 
@@ -195,6 +216,7 @@ def resolve_with_playwright(url: str, timeout_ms: int, target_domain: str) -> di
             browser.close()
 
         return {"original": url, "final": final, "status": 200, "error": ""}
+
     except Exception as exc:
         return {"original": url, "final": "", "status": "", "error": str(exc)}
 
