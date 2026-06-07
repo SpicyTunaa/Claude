@@ -287,6 +287,112 @@ def run_camoufox_mode(urls: list[str], workers: int, timeout: int, target_domain
     return results
 
 
+# ---------------------------------------------------------------------------
+# Extension mode (Playwright + bypass.tools extension loaded)
+# ---------------------------------------------------------------------------
+
+def _resolve_with_extension_page(page, url: str, timeout_ms: int, target_domain: str) -> dict:
+    from playwright.sync_api import TimeoutError as PWTimeout
+
+    found_target: list[str] = []
+
+    def on_response(response):
+        if target_domain and target_domain in response.url:
+            found_target.append(response.url)
+
+    if target_domain:
+        page.on("response", on_response)
+
+    try:
+        page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+    except Exception:
+        pass
+
+    deadline = time.monotonic() + timeout_ms / 1000
+    final_url = None
+
+    while time.monotonic() < deadline:
+        if found_target:
+            final_url = found_target[0]
+            break
+
+        try:
+            # Extension sets window.dest when bypass completes
+            dest = page.evaluate("() => (typeof window.dest === 'string' && window.dest) || null")
+            if dest:
+                final_url = dest
+                break
+        except Exception:
+            pass
+
+        if target_domain:
+            try:
+                hit = _find_target_in_page(page, target_domain)
+                if hit:
+                    final_url = hit
+                    break
+            except Exception:
+                pass
+
+            if target_domain in page.url:
+                final_url = page.url
+                break
+
+        time.sleep(0.5)
+
+    if not final_url:
+        try:
+            dest = page.evaluate("() => (typeof window.dest === 'string' && window.dest) || null")
+            final_url = dest or page.url
+        except Exception:
+            final_url = page.url
+
+    return {"original": url, "final": final_url or "", "status": 200, "error": ""}
+
+
+def run_extension_mode(urls: list[str], timeout: int, target_domain: str, extension_path: str) -> list[dict]:
+    import shutil
+    import tempfile
+    from playwright.sync_api import sync_playwright
+
+    timeout_ms = timeout * 1000
+    results = []
+    user_data_dir = tempfile.mkdtemp()
+
+    try:
+        with sync_playwright() as pw:
+            context = pw.chromium.launch_persistent_context(
+                user_data_dir,
+                headless=False,
+                args=[
+                    f"--disable-extensions-except={extension_path}",
+                    f"--load-extension={extension_path}",
+                    "--no-sandbox",
+                ],
+                viewport={"width": 1280, "height": 800},
+            )
+
+            for i, url in enumerate(urls):
+                page = context.new_page()
+                try:
+                    result = _resolve_with_extension_page(page, url, timeout_ms, target_domain)
+                except Exception as exc:
+                    result = {"original": url, "final": "", "status": "", "error": str(exc)}
+                results.append(result)
+                try:
+                    page.close()
+                except Exception:
+                    pass
+                print(f"\r  {i + 1}/{len(urls)} processed", end="", flush=True)
+
+            context.close()
+    finally:
+        shutil.rmtree(user_data_dir, ignore_errors=True)
+
+    print()
+    return results
+
+
 def run_playwright_mode(urls: list[str], workers: int, timeout: int, target_domain: str) -> list[dict]:
     timeout_ms = timeout * 1000
     results = []
@@ -333,7 +439,7 @@ def parse_args():
     parser.add_argument("input", help="Text file with one URL per line")
     parser.add_argument(
         "--mode",
-        choices=["requests", "playwright", "camoufox"],
+        choices=["requests", "playwright", "camoufox", "extension"],
         default="requests",
         help="Resolution method (default: requests)",
     )
@@ -357,7 +463,12 @@ def parse_args():
     parser.add_argument(
         "--target-domain",
         default="",
-        help="Domain to look for in page content, e.g. mega.nz (playwright mode only)",
+        help="Domain to look for in page content, e.g. mega.nz",
+    )
+    parser.add_argument(
+        "--extension-path",
+        default="",
+        help="Path to unpacked bypass extension folder (extension mode only)",
     )
     return parser.parse_args()
 
@@ -377,6 +488,11 @@ def main():
         results = run_requests_mode(urls, args.workers, args.timeout, args.target_domain)
     elif args.mode == "camoufox":
         results = run_camoufox_mode(urls, args.workers, args.timeout, args.target_domain)
+    elif args.mode == "extension":
+        if not args.extension_path:
+            print("--extension-path is required for extension mode", file=sys.stderr)
+            sys.exit(1)
+        results = run_extension_mode(urls, args.timeout, args.target_domain, args.extension_path)
     else:
         results = run_playwright_mode(urls, args.workers, args.timeout, args.target_domain)
 
