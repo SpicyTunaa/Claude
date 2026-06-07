@@ -4,6 +4,7 @@ URL Extractor - resolves final destination URLs from a list of redirect links.
 Supports two modes:
   --mode requests   Fast HTTP HEAD/GET approach for standard 301/302 redirects (default)
   --mode playwright Browser-based approach for JS-heavy pages that redirect via script
+  --mode camoufox  Firefox-based stealth browser, best for anti-bot protected pages
 
 Input:  text file with one URL per line
 Output: CSV with original_url, final_url, status columns
@@ -221,6 +222,71 @@ def resolve_with_playwright(url: str, timeout_ms: int, target_domain: str) -> di
         return {"original": url, "final": "", "status": "", "error": str(exc)}
 
 
+# ---------------------------------------------------------------------------
+# Camoufox mode (Firefox with real fingerprint, best anti-bot resistance)
+# ---------------------------------------------------------------------------
+
+def resolve_with_camoufox(url: str, timeout_ms: int, target_domain: str) -> dict:
+    try:
+        from camoufox.sync_api import Camoufox
+
+        with Camoufox(headless=True, geoip=True) as browser:
+            page = browser.new_page()
+
+            found_target: list[str] = []
+
+            def on_response(response):
+                if target_domain and target_domain in response.url:
+                    found_target.append(response.url)
+
+            if target_domain:
+                page.on("response", on_response)
+
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+            except Exception:
+                pass
+
+            if found_target:
+                return {"original": url, "final": found_target[0], "status": 200, "error": ""}
+
+            hit = _find_target_in_page(page, target_domain) if target_domain else None
+            if hit:
+                return {"original": url, "final": hit, "status": 200, "error": ""}
+
+            try:
+                page.wait_for_load_state("networkidle", timeout=timeout_ms)
+            except Exception:
+                pass
+
+            if found_target:
+                return {"original": url, "final": found_target[0], "status": 200, "error": ""}
+
+            hit = _find_target_in_page(page, target_domain) if target_domain else None
+            final = hit or page.url
+
+        return {"original": url, "final": final, "status": 200, "error": ""}
+    except Exception as exc:
+        return {"original": url, "final": "", "status": "", "error": str(exc)}
+
+
+def run_camoufox_mode(urls: list[str], workers: int, timeout: int, target_domain: str) -> list[dict]:
+    timeout_ms = timeout * 1000
+    results = []
+    from concurrent.futures import ProcessPoolExecutor
+
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(resolve_with_camoufox, u, timeout_ms, target_domain): u for u in urls}
+        done = 0
+        for future in as_completed(futures):
+            results.append(future.result())
+            done += 1
+            print(f"\r  {done}/{len(urls)} processed", end="", flush=True)
+
+    print()
+    return results
+
+
 def run_playwright_mode(urls: list[str], workers: int, timeout: int, target_domain: str) -> list[dict]:
     timeout_ms = timeout * 1000
     results = []
@@ -267,7 +333,7 @@ def parse_args():
     parser.add_argument("input", help="Text file with one URL per line")
     parser.add_argument(
         "--mode",
-        choices=["requests", "playwright"],
+        choices=["requests", "playwright", "camoufox"],
         default="requests",
         help="Resolution method (default: requests)",
     )
@@ -309,6 +375,8 @@ def main():
 
     if args.mode == "requests":
         results = run_requests_mode(urls, args.workers, args.timeout, args.target_domain)
+    elif args.mode == "camoufox":
+        results = run_camoufox_mode(urls, args.workers, args.timeout, args.target_domain)
     else:
         results = run_playwright_mode(urls, args.workers, args.timeout, args.target_domain)
 
