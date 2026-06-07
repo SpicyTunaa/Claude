@@ -338,6 +338,15 @@ def _resolve_with_extension_page(page, url: str, timeout_ms: int, target_domain:
                 final_url = page.url
                 break
 
+        # Click retry button if extension stalled
+        try:
+            retry_btn = page.locator("button:has-text('Retry'), button:has-text('retry'), [id*='retry'], [class*='retry']").first
+            if retry_btn.is_visible(timeout=200):
+                retry_btn.click()
+                time.sleep(1)
+        except Exception:
+            pass
+
         time.sleep(0.5)
 
     if not final_url:
