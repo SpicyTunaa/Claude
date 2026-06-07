@@ -28,24 +28,83 @@ from pathlib import Path
 # Requests mode
 # ---------------------------------------------------------------------------
 
-def resolve_with_requests(url: str, timeout: int, session) -> dict:
+# Patterns that embed the next hop URL inside a JS blob on the page
+_EMBEDDED_LINK_PATTERNS = [
+    re.compile(r"""link:\s*['"]( https?://[^'"]+)['"]"""),
+    re.compile(r"""link:\s*['"]( https?://[^'"]+)['"]"""),
+    re.compile(r"""['"]link['"]\s*:\s*['"]( https?://[^'"]+)['"]"""),
+    re.compile(r"""conf_rew\s*=\s*\{[^}]*link:\s*['"]( https?://[^'"]+)['"]""", re.S),
+    # generic: any mega / target URL in the HTML
+]
+
+# Tighter version without the accidental leading space
+_EMBEDDED_LINK_PATTERNS = [
+    re.compile(r"""link:\s*['"]( ?https?://[^'"]+)['"]"""),
+    re.compile(r"""['"]link['"]\s*:\s*['"]( ?https?://[^'"]+)['"]"""),
+]
+
+
+def _extract_embedded_link(html: str) -> str | None:
+    for pat in _EMBEDDED_LINK_PATTERNS:
+        m = pat.search(html)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
+def _follow_chain(start_url: str, timeout: int, session, target_domain: str, max_hops: int = 10) -> dict:
+    """Follow a chain of HTTP redirects + embedded JS links until target_domain is found."""
+    url = start_url
+    visited = set()
+    for _ in range(max_hops):
+        if url in visited:
+            break
+        visited.add(url)
+
+        if target_domain and target_domain in url:
+            return {"original": start_url, "final": url, "status": 200, "error": ""}
+
+        try:
+            resp = session.get(url, timeout=timeout, allow_redirects=True)
+        except Exception as exc:
+            return {"original": start_url, "final": url or "", "status": "", "error": str(exc)}
+
+        # After HTTP redirects, check if we landed on the target
+        if target_domain and target_domain in resp.url:
+            return {"original": start_url, "final": resp.url, "status": resp.status_code, "error": ""}
+
+        content_type = resp.headers.get("Content-Type", "")
+        if "html" not in content_type:
+            # Not an HTML page — nowhere further to go
+            return {"original": start_url, "final": resp.url, "status": resp.status_code, "error": ""}
+
+        # Search for target domain anywhere in the HTML
+        if target_domain:
+            pat = re.compile(rf'https?://[^\s"\'<>]*{re.escape(target_domain)}[^\s"\'<>]*')
+            m = pat.search(resp.text)
+            if m:
+                return {"original": start_url, "final": m.group(0), "status": resp.status_code, "error": ""}
+
+        # Try to find the next embedded hop
+        next_url = _extract_embedded_link(resp.text)
+        if next_url and next_url != url:
+            url = next_url
+            continue
+
+        # No further hop found — return current landing page
+        return {"original": start_url, "final": resp.url, "status": resp.status_code, "error": ""}
+
+    return {"original": start_url, "final": url, "status": "", "error": "max hops reached"}
+
+
+def resolve_with_requests(url: str, timeout: int, session, target_domain: str) -> dict:
     try:
-        resp = session.head(url, timeout=timeout, allow_redirects=True)
-        final = resp.url
-
-        # Some servers block HEAD; fall back to GET if we land on the same URL
-        # without a redirect (could be a soft block returning 405 or 200 with no body)
-        if resp.status_code == 405:
-            resp = session.get(url, timeout=timeout, allow_redirects=True, stream=True)
-            resp.close()
-            final = resp.url
-
-        return {"original": url, "final": final, "status": resp.status_code, "error": ""}
+        return _follow_chain(url, timeout, session, target_domain)
     except Exception as exc:
         return {"original": url, "final": "", "status": "", "error": str(exc)}
 
 
-def run_requests_mode(urls: list[str], workers: int, timeout: int) -> list[dict]:
+def run_requests_mode(urls: list[str], workers: int, timeout: int, target_domain: str) -> list[dict]:
     import requests
     from requests.adapters import HTTPAdapter
     from urllib3.util.retry import Retry
@@ -57,10 +116,14 @@ def run_requests_mode(urls: list[str], workers: int, timeout: int) -> list[dict]
     with requests.Session() as session:
         session.mount("http://", adapter)
         session.mount("https://", adapter)
-        session.headers.update({"User-Agent": "Mozilla/5.0 (compatible; URLExtractor/1.0)"})
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                          "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        })
 
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures = {pool.submit(resolve_with_requests, u, timeout, session): u for u in urls}
+            futures = {pool.submit(resolve_with_requests, u, timeout, session, target_domain): u for u in urls}
             done = 0
             for future in as_completed(futures):
                 results.append(future.result())
@@ -223,7 +286,7 @@ def main():
     start = time.monotonic()
 
     if args.mode == "requests":
-        results = run_requests_mode(urls, args.workers, args.timeout)
+        results = run_requests_mode(urls, args.workers, args.timeout, args.target_domain)
     else:
         results = run_playwright_mode(urls, args.workers, args.timeout, args.target_domain)
 
