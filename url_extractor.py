@@ -11,11 +11,13 @@ Output: CSV with original_url, final_url, status columns
 Usage:
   python url_extractor.py links.txt
   python url_extractor.py links.txt --mode playwright --output results.csv
-  python url_extractor.py links.txt --workers 20 --timeout 10
+  python url_extractor.py links.txt --workers 20 --timeout 30
+  python url_extractor.py links.txt --mode playwright --target-domain mega.nz --timeout 60
 """
 
 import argparse
 import csv
+import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -70,18 +72,63 @@ def run_requests_mode(urls: list[str], workers: int, timeout: int) -> list[dict]
 
 
 # ---------------------------------------------------------------------------
-# Playwright mode (JS-rendered redirects)
+# Playwright mode (JS-rendered redirects + countdown pages)
 # ---------------------------------------------------------------------------
 
-def resolve_with_playwright(url: str, timeout_ms: int) -> dict:
+def _find_target_in_page(page, target_domain: str) -> str | None:
+    """Search page HTML and all anchors for a URL matching target_domain."""
+    html = page.content()
+    pattern = rf'https?://[^\s"\'<>]*{re.escape(target_domain)}[^\s"\'<>]*'
+    matches = re.findall(pattern, html)
+    if matches:
+        return matches[0]
+    return None
+
+
+def resolve_with_playwright(url: str, timeout_ms: int, target_domain: str) -> dict:
     try:
-        from playwright.sync_api import sync_playwright
+        from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
         with sync_playwright() as pw:
             browser = pw.chromium.launch(headless=True)
             page = browser.new_page()
-            page.goto(url, wait_until="networkidle", timeout=timeout_ms)
-            final = page.url
+
+            found_target: list[str] = []
+
+            # Intercept navigations — catch the moment the browser lands on target_domain
+            def on_response(response):
+                if target_domain and target_domain in response.url:
+                    found_target.append(response.url)
+
+            if target_domain:
+                page.on("response", on_response)
+
+            page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+
+            # If target already captured via redirect interception, we're done
+            if found_target:
+                browser.close()
+                return {"original": url, "final": found_target[0], "status": 200, "error": ""}
+
+            # Check page HTML immediately
+            hit = _find_target_in_page(page, target_domain) if target_domain else None
+            if hit:
+                browser.close()
+                return {"original": url, "final": hit, "status": 200, "error": ""}
+
+            # Wait up to timeout for networkidle (countdown pages finish loading)
+            try:
+                page.wait_for_load_state("networkidle", timeout=timeout_ms)
+            except PWTimeout:
+                pass
+
+            if found_target:
+                browser.close()
+                return {"original": url, "final": found_target[0], "status": 200, "error": ""}
+
+            # Scan HTML after page settles
+            hit = _find_target_in_page(page, target_domain) if target_domain else None
+            final = hit or page.url
             browser.close()
 
         return {"original": url, "final": final, "status": 200, "error": ""}
@@ -89,14 +136,14 @@ def resolve_with_playwright(url: str, timeout_ms: int) -> dict:
         return {"original": url, "final": "", "status": "", "error": str(exc)}
 
 
-def run_playwright_mode(urls: list[str], workers: int, timeout: int) -> list[dict]:
+def run_playwright_mode(urls: list[str], workers: int, timeout: int, target_domain: str) -> list[dict]:
     timeout_ms = timeout * 1000
     results = []
     # Playwright's sync API is not thread-safe; use processes instead
     from concurrent.futures import ProcessPoolExecutor
 
     with ProcessPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(resolve_with_playwright, u, timeout_ms): u for u in urls}
+        futures = {pool.submit(resolve_with_playwright, u, timeout_ms, target_domain): u for u in urls}
         done = 0
         for future in as_completed(futures):
             results.append(future.result())
@@ -156,6 +203,11 @@ def parse_args():
         default=15,
         help="Per-URL timeout in seconds (default: 15)",
     )
+    parser.add_argument(
+        "--target-domain",
+        default="",
+        help="Domain to look for in page content, e.g. mega.nz (playwright mode only)",
+    )
     return parser.parse_args()
 
 
@@ -173,7 +225,7 @@ def main():
     if args.mode == "requests":
         results = run_requests_mode(urls, args.workers, args.timeout)
     else:
-        results = run_playwright_mode(urls, args.workers, args.timeout)
+        results = run_playwright_mode(urls, args.workers, args.timeout, args.target_domain)
 
     elapsed = time.monotonic() - start
     save_results(results, args.output)
