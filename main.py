@@ -24,8 +24,32 @@ from domain_hunter.utils.logger import setup_logger
 from webapp.app import create_app
 
 
-async def _detect_ngrok_url(port: int) -> str | None:
-    """Query the local ngrok agent API and return the first HTTPS tunnel URL."""
+async def _detect_tunnel_url(port: int) -> str | None:
+    """Detect active tunnel URL — checks cloudflared URL file, then ngrok API."""
+    import re
+
+    # cloudflared: scripts/start_tunnel.sh writes the URL here
+    url_file = Path("/tmp/cloudflared_url.txt")
+    if url_file.exists():
+        try:
+            url = url_file.read_text().strip()
+            if re.match(r'^https://[a-zA-Z0-9-]+\.trycloudflare\.com$', url):
+                return url
+        except Exception:
+            pass
+
+    # cloudflared log fallback — parse the log file directly
+    log_file = Path("/tmp/cloudflared.log")
+    if log_file.exists():
+        try:
+            text = log_file.read_text()
+            m = re.search(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com', text)
+            if m:
+                return m.group(0)
+        except Exception:
+            pass
+
+    # ngrok fallback
     try:
         async with httpx.AsyncClient(timeout=2) as client:
             r = await client.get("http://127.0.0.1:4040/api/tunnels")
@@ -36,6 +60,7 @@ async def _detect_ngrok_url(port: int) -> str | None:
                     return url
     except Exception:
         pass
+
     return None
 
 
@@ -77,15 +102,15 @@ async def main() -> None:
     db_dir = Path(config.DB_PATH).parent
     db_dir.mkdir(parents=True, exist_ok=True)
 
-    # Auto-detect ngrok URL — overrides WEBAPP_URL from .env if ngrok is running
-    ngrok_url = await _detect_ngrok_url(config.WEB_PORT)
-    if ngrok_url:
-        config.WEBAPP_URL = ngrok_url
-        logger.info("ngrok detected — WEBAPP_URL set to %s", ngrok_url)
+    # Auto-detect tunnel URL (cloudflared or ngrok) — overrides WEBAPP_URL from .env
+    tunnel_url = await _detect_tunnel_url(config.WEB_PORT)
+    if tunnel_url:
+        config.WEBAPP_URL = tunnel_url
+        logger.info("Tunnel detected — WEBAPP_URL set to %s", tunnel_url)
     elif not config.WEBAPP_URL.startswith("https://"):
         logger.warning(
             "WEBAPP_URL=%s is not HTTPS — Telegram WebApp buttons will not work. "
-            "Start ngrok (ngrok http %d) or set a valid HTTPS URL in .env",
+            "Start cloudflared (cloudflared tunnel --url http://localhost:%d) or set WEBAPP_URL in .env",
             config.WEBAPP_URL,
             config.WEB_PORT,
         )
