@@ -8,11 +8,12 @@ router = APIRouter()
 async def list_domains(
     hunt_id: str,
     search: str = "",
-    live: str = "",         # "true" | "false" | ""
+    live: str = "",
     sort: str = "confidence_score",
     order: str = "desc",
     limit: int = 50,
     offset: int = 0,
+    exclude_source: str = "",
 ):
     if not await db.get_hunt(hunt_id):
         raise HTTPException(404, "Hunt not found")
@@ -26,5 +27,6 @@ async def list_domains(
         order=order,
         limit=min(limit, 200),
         offset=offset,
+        exclude_source=exclude_source,
     )
     return {"hunt_id": hunt_id, "total": total, "items": rows}

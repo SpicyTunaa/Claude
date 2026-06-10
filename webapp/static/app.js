@@ -11,7 +11,7 @@ const state = {
   domainsTotal: 0,
   domainsOffset: 0,
   domainsLoading: false,
-  domainsFilter: { search: '', live: '', sort: 'confidence_score' },
+  domainsFilter: { search: '', live: '', sort: 'confidence_score', excludeSource: '' },
   progressFeed: [],
   progressSse: null,
 };
@@ -65,7 +65,9 @@ const fmt = {
   },
   elapsed(start, end) {
     if (!start || !end) return '';
-    const s = Math.round((new Date(end) - new Date(start)) / 1000);
+    const toUtc = s => /[Z+]/.test(s.slice(-6)) ? new Date(s) : new Date(s + 'Z');
+    const s = Math.round((toUtc(end) - toUtc(start)) / 1000);
+    if (s < 0 || s > 86400) return '';
     return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
   },
   score(n) { return n ? n.toFixed(2) : '—'; },
@@ -194,6 +196,14 @@ function renderDetailFull(hunt) {
         }),
         'Live',
       ),
+      h('label', { class: 'live-toggle', title: 'Hide domains found only via shared hosting (dns_expander)' },
+        h('input', {
+          type: 'checkbox',
+          checked: state.domainsFilter.excludeSource === 'dns_expander',
+          onChange: e => { state.domainsFilter.excludeSource = e.target.checked ? 'dns_expander' : ''; reloadDomains(); },
+        }),
+        'Hide hosting',
+      ),
       h('select', {
         class: 'filter-select',
         onChange: e => { state.domainsFilter.sort = e.target.value; reloadDomains(); },
@@ -244,11 +254,13 @@ async function loadMoreDomains() {
   const { search, live, sort } = state.domainsFilter;
 
   try {
+    const { excludeSource } = state.domainsFilter;
     const params = new URLSearchParams({
       limit: 50, offset: state.domainsOffset,
       sort, order: 'desc',
       ...(search && { search }),
       ...(live && { live }),
+      ...(excludeSource && { exclude_source: excludeSource }),
     });
     const data = await api(`/api/hunts/${state.huntId}/domains?${params}`);
     state.domainsTotal = data.total;

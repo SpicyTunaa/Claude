@@ -122,6 +122,7 @@ async def get_domains(
     order: str = "desc",
     limit: int = 50,
     offset: int = 0,
+    exclude_source: str = "",
 ) -> tuple[int, list[dict]]:
     SAFE_SORT = {"confidence_score", "domain", "status_code", "is_live"}
     safe_sort = sort if sort in SAFE_SORT else "confidence_score"
@@ -134,6 +135,9 @@ async def get_domains(
         params.append(f"%{search}%")
     if live_only:
         conds.append("is_live = 1")
+    if exclude_source:
+        conds.append("sources NOT LIKE ?")
+        params.append(f"%{exclude_source}%")
     where = " AND ".join(conds)
 
     async with _db.execute(f"SELECT COUNT(*) FROM domains WHERE {where}", params) as cur:

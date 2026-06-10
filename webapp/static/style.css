@@ -92,11 +92,10 @@ body {
 
 /* ── Filter bar ─────────────────────────────────────── */
 .filter-bar {
-  position: sticky; top: 57px; z-index: 9;
   background: var(--bg);
   padding: 8px 16px;
   border-bottom: 1px solid color-mix(in srgb, var(--hint) 15%, transparent);
-  display: flex; gap: 8px; align-items: center;
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
 }
 .search-input {
   flex: 1; border: 1px solid color-mix(in srgb, var(--hint) 40%, transparent);
@@ -118,7 +117,7 @@ body {
   text-align: left; padding: 6px 8px;
   color: var(--hint); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px;
   border-bottom: 1px solid color-mix(in srgb, var(--hint) 20%, transparent);
-  position: sticky; top: 107px; background: var(--bg); z-index: 8;
+  position: sticky; top: 0; background: var(--bg); z-index: 8;
 }
 .domain-table td { padding: 8px 8px; border-bottom: 1px solid color-mix(in srgb, var(--hint) 10%, transparent); }
 .domain-table tr:last-child td { border: none; }

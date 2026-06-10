@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import re
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 import aiohttp
+import tldextract
 
 from domain_hunter.config import Config
 from domain_hunter.deduplicator import merge
@@ -68,6 +70,22 @@ def _print_summary(
     logger.info("─" * 50)
 
 
+def _keyword_boost(domain: str, seed_domain: str, vertical: str) -> float:
+    """Return a confidence boost (0.0–0.2) for domains sharing keywords with seed/vertical."""
+    seed_ext = tldextract.extract(seed_domain)
+    seed_words = set(re.split(r'[-_.]', seed_ext.domain.lower()))
+    vert_words = set(re.split(r'[\s_-]+', vertical.lower()))
+    keywords = {w for w in seed_words | vert_words if len(w) >= 4}
+
+    dom_ext = tldextract.extract(domain)
+    dom_name = f"{dom_ext.subdomain}.{dom_ext.domain}".lower().lstrip(".")
+
+    for kw in keywords:
+        if kw in dom_name:
+            return 0.2
+    return 0.0
+
+
 async def run_hunt(
     seed_domain: str,
     vertical: str,
@@ -125,6 +143,10 @@ async def run_hunt(
 
         deduped = merge(filtered)
         logger.info("After dedup: %d unique domains", len(deduped))
+        for r in deduped:
+            boost = _keyword_boost(r.domain, seed_domain, vertical)
+            if boost:
+                r.confidence_score = round(min(1.0, r.confidence_score + boost), 3)
         await _emit("dedup_done", total_so_far=len(deduped))
 
         if validate:
