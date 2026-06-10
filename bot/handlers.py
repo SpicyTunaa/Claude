@@ -40,7 +40,8 @@ async def handle_hunt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
-    seed_domain, vertical = args[0].lower().strip(), args[1].lower().strip()
+    seed_domain = args[0].lower().strip().strip("<>")
+    vertical = args[1].lower().strip().strip("<>")
     hunt_id = str(uuid.uuid4())
 
     await db.insert_hunt(
