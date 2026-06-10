@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime, timezone
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
-from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from domain_hunter.config import Config
@@ -52,9 +51,8 @@ async def handle_hunt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     )
 
     progress_msg = await update.message.reply_text(
-        f"Starting hunt for *{seed_domain}* ({vertical})…\n"
-        f"Hunt ID: `{hunt_id[:8]}`\nThis may take 2–5 minutes.",
-        parse_mode=ParseMode.MARKDOWN,
+        f"Starting hunt for {seed_domain} ({vertical})...\n"
+        f"Hunt ID: {hunt_id[:8]}\nThis may take 2-5 minutes.",
     )
 
     asyncio.create_task(
@@ -115,7 +113,7 @@ async def _run_and_notify(
         ]])
 
         summary = (
-            f"Hunt complete for *{seed_domain}*\n"
+            f"Hunt complete for {seed_domain}\n"
             f"Domains: {len(result.records)} | Live: {live}\n"
             f"Sources: {', '.join(sources)}\n"
             f"Elapsed: {elapsed:.0f}s"
@@ -125,7 +123,6 @@ async def _run_and_notify(
             chat_id=chat_id,
             message_id=progress_msg_id,
             text=summary,
-            parse_mode=ParseMode.MARKDOWN,
             reply_markup=keyboard,
         )
 
@@ -188,10 +185,9 @@ async def handle_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def handle_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "*Domain Hunter v2*\n\n"
+        "Domain Hunter v2\n\n"
         "/hunt <domain> <vertical> — discover related domains\n"
         "/dashboard — open the web dashboard\n"
         "/status — check daily API quota\n"
         "/help — show this message",
-        parse_mode=ParseMode.MARKDOWN,
     )
