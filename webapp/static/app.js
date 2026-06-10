@@ -439,9 +439,20 @@ function debounce(fn, ms) {
 }
 
 // ── Boot ─────────────────────────────────────────────────
-const initHuntId = new URLSearchParams(window.location.search).get('hunt');
-if (initHuntId) {
-  navigate('detail', { huntId: initHuntId });
-} else {
-  navigate('list');
+window.addEventListener('error', e => {
+  document.body.innerHTML = `<div style="color:red;padding:20px;word-break:break-all">JS Error: ${e.message} @ ${e.filename}:${e.lineno}</div>`;
+});
+window.addEventListener('unhandledrejection', e => {
+  document.body.innerHTML = `<div style="color:red;padding:20px;word-break:break-all">Unhandled rejection: ${e.reason}</div>`;
+});
+
+try {
+  const initHuntId = new URLSearchParams(window.location.search).get('hunt');
+  if (initHuntId) {
+    navigate('detail', { huntId: initHuntId });
+  } else {
+    navigate('list');
+  }
+} catch (e) {
+  document.body.innerHTML = `<div style="color:red;padding:20px">Boot error: ${e.message}</div>`;
 }
