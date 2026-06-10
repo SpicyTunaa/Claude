@@ -37,6 +37,10 @@ class Config:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FILE: str | None = os.getenv("LOG_FILE") or None
 
+    WEBAPP_URL: str = os.getenv("WEBAPP_URL", "http://localhost:8080")
+    WEB_PORT: int = int(os.getenv("WEB_PORT", "8080"))
+    DB_PATH: str = os.getenv("DB_PATH", "./data/domain_hunter.db")
+
     HACKERTARGET_QUOTA_FILE: Path = Path.home() / ".dh_ht_quota.json"
 
 

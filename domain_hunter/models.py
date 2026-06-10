@@ -3,6 +3,17 @@ from datetime import datetime
 
 
 @dataclass
+class ProgressEvent:
+    hunt_id: str
+    event: str                        # hunter_done | filter_done | dedup_done | validation_start | validation_done | complete | error
+    hunter_name: str | None = None
+    domains_found: int | None = None
+    total_so_far: int | None = None
+    message: str | None = None
+    ts: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+
+
+@dataclass
 class DomainRecord:
     domain: str
     sources: set[str] = field(default_factory=set)
