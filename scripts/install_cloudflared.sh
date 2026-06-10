@@ -5,3 +5,6 @@ echo "Downloading cloudflared..."
 curl -fsSL "$URL" -o "$HOME/cloudflared"
 chmod +x "$HOME/cloudflared"
 echo "Done. Run: ~/cloudflared tunnel --url http://localhost:8080"
+
+echo "Starting tunnel..."
+exec "$HOME/cloudflared" tunnel --url http://localhost:8080
