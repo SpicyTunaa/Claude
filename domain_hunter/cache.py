@@ -38,6 +38,8 @@ def load(source: str, seed: str, use_cache: bool = True) -> Optional[list[str]]:
 
 
 def save(source: str, seed: str, domains: list[str]) -> None:
+    if not domains:
+        return  # Never cache empty results — let the next run retry
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     path = _cache_path(source, seed)
     data = {
