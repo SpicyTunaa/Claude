@@ -11,7 +11,7 @@ const state = {
   domainsTotal: 0,
   domainsOffset: 0,
   domainsLoading: false,
-  domainsFilter: { search: '', live: '', sort: 'confidence_score', excludeSource: '' },
+  domainsFilter: { search: '', live: '', sort: 'confidence_score', excludeSource: 'dns_expander' },
   progressFeed: [],
   progressSse: null,
 };
@@ -199,7 +199,7 @@ function renderDetailFull(hunt) {
       h('label', { class: 'live-toggle', title: 'Hide domains found only via shared hosting (dns_expander)' },
         h('input', {
           type: 'checkbox',
-          checked: state.domainsFilter.excludeSource === 'dns_expander',
+          checked: state.domainsFilter.excludeSource !== '',
           onChange: e => { state.domainsFilter.excludeSource = e.target.checked ? 'dns_expander' : ''; reloadDomains(); },
         }),
         'Hide hosting',

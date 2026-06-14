@@ -5,12 +5,12 @@ from domain_hunter.models import DomainRecord
 SOURCE_WEIGHTS: dict[str, float] = {
     "crtsh":        0.9,
     "hackertarget": 0.8,
-    "dns_expander": 0.8,
     "github":       0.7,
     "viewdns":      0.6,
     "duckduckgo":   0.5,
     "yandex":       0.4,
     "reddit":       0.3,
+    "dns_expander": 0.3,  # shared hosting — low signal on its own
 }
 
 
