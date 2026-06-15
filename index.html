@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SubtlePass · אתר דוגמא</title>
+  <meta name="description" content="אתר דוגמא להדגמת ווידג'ט תוכניות התשלום של SubtlePass" />
+  <link rel="preconnect" href="https://subtlepass.com" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="logo">
+        <span class="logo-mark">◆</span>
+        <span class="logo-text">SubtlePass</span>
+      </a>
+      <nav class="nav">
+        <a href="#features">יתרונות</a>
+        <a href="#pricing">תוכנית</a>
+        <a href="#faq">שאלות נפוצות</a>
+      </nav>
+      <a href="#pricing" class="btn btn-ghost">התחברות</a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <span class="badge">✨ דמו חי של הווידג'ט</span>
+      <h1>גישה פרימיום לתוכן שלך,<br />בלי חיכוך.</h1>
+      <p class="lead">
+        SubtlePass מאפשר לך למכור גישה לתוכן באמצעות ווידג'ט אחד פשוט.
+        האתר הזה הוא דוגמא חיה — התוכנית למטה נטענת ישירות מ-SubtlePass.
+      </p>
+      <div class="hero-cta">
+        <a href="#pricing" class="btn btn-primary">צפו בתוכנית</a>
+        <a href="#features" class="btn btn-outline">איך זה עובד</a>
+      </div>
+    </div>
+    <div class="hero-glow" aria-hidden="true"></div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="section">
+    <div class="container">
+      <h2 class="section-title">למה SubtlePass?</h2>
+      <p class="section-sub">שלושה צעדים בלבד בין התוכן שלך לבין הכנסה.</p>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>התקנה בשורה אחת</h3>
+          <p>מדביקים תגית <code>&lt;div&gt;</code> וסקריפט אחד — והווידג'ט עולה בכל אתר.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>תשלום מאובטח</h3>
+          <p>כל תהליך הסליקה מתבצע אצל SubtlePass — אין צורך לאחסן פרטי תשלום.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>משתלב בעיצוב</h3>
+          <p>הווידג'ט עדין ונקי, ומתאים לכל ערכת צבעים של האתר שלך.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing / Widget -->
+  <section id="pricing" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">התוכנית שלך</h2>
+      <p class="section-sub">
+        הכרטיס למטה הוא ווידג'ט SubtlePass אמיתי, שנטען לפי מזהה התוכנית.
+      </p>
+
+      <div class="widget-stage">
+        <!-- ===== SubtlePass widget ===== -->
+        <div
+          data-subtlepass-widget
+          data-plan-id="plan_f505f0282330404c9f9da6225c78eb0f"
+        ></div>
+        <!-- ===== /SubtlePass widget ===== -->
+
+        <p class="widget-note" id="widget-note">
+          טוען את הווידג'ט מ-SubtlePass…
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="section">
+    <div class="container narrow">
+      <h2 class="section-title">שאלות נפוצות</h2>
+      <details class="faq-item" open>
+        <summary>מה זה הווידג'ט שמופיע באתר?</summary>
+        <p>
+          זהו ווידג'ט SubtlePass שמוטמע באמצעות שתי שורות קוד: תגית
+          <code>div</code> עם מזהה התוכנית, וסקריפט הטעינה של SubtlePass.
+        </p>
+      </details>
+      <details class="faq-item">
+        <summary>איך מטמיעים את זה באתר משלי?</summary>
+        <p>מעתיקים את קטע הקוד הבא לתוך ה-HTML שלכם:</p>
+        <pre><code>&lt;div
+  data-subtlepass-widget
+  data-plan-id="plan_f505f0282330404c9f9da6225c78eb0f"
+&gt;&lt;/div&gt;
+&lt;script src="https://subtlepass.com/widget/v1/subtlepass.js"&gt;&lt;/script&gt;</code></pre>
+      </details>
+      <details class="faq-item">
+        <summary>האם זה דמו או אתר אמיתי?</summary>
+        <p>
+          זהו אתר דוגמא להדגמה בלבד, אך הווידג'ט עצמו נטען מהשרת האמיתי של
+          SubtlePass לפי מזהה התוכנית שצוין.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>© 2026 SubtlePass · אתר דוגמא</span>
+      <span class="footer-meta">נבנה להדגמת הטמעת הווידג'ט</span>
+    </div>
+  </footer>
+
+  <!-- SubtlePass widget loader -->
+  <script src="https://subtlepass.com/widget/v1/subtlepass.js"></script>
+
+  <!-- Small helper: hide the loading note once the widget renders -->
+  <script>
+    (function () {
+      var note = document.getElementById('widget-note');
+      var stage = document.querySelector('.widget-stage');
+      if (!note || !stage) return;
+      var widget = stage.querySelector('[data-subtlepass-widget]');
+
+      function check() {
+        if (widget && widget.children.length > 0) {
+          note.style.display = 'none';
+          return true;
+        }
+        return false;
+      }
+
+      var tries = 0;
+      var timer = setInterval(function () {
+        tries++;
+        if (check() || tries > 20) clearInterval(timer);
+        if (tries > 20 && note.style.display !== 'none') {
+          note.textContent =
+            'הווידג\'ט לא נטען. ודאו חיבור לאינטרנט ושמזהה התוכנית תקין.';
+        }
+      }, 500);
+    })();
+  </script>
+</body>
+</html>
