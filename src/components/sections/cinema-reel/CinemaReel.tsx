@@ -872,7 +872,7 @@ export default function CinemaReel({ className }: { className?: string }) {
       {/* Track */}
       <div
         ref={trackRef}
-        className="absolute inset-x-0 top-0 will-change-transform"
+        className="absolute inset-x-0 top-0"
         style={{
           touchAction: "none",
           paddingLeft: "var(--cinema-pad-x)",
@@ -880,7 +880,6 @@ export default function CinemaReel({ className }: { className?: string }) {
           transform: `translate3d(0, ${
             TOP_PAD_VH - AUTO_START_IDX * (SLIDE_VH * AUTO_SCALE_FROM + GAP_VH)
           }dvh, 0)`,
-          filter: autoScrolling ? "url(#cinema-motion-blur)" : undefined,
         }}
       >
         {Array.from({ length: TOTAL_RENDERED }).map((_, i) => {
