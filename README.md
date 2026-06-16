@@ -15,7 +15,7 @@ AI face-swap provider.
 ┌──────────────────────────┐        ┌───────────────────────────┐
 │  apps/web (Next.js)       │        │  apps/server (Express)     │
 │  - Telegram WebApp SDK    │  HTTPS │  - initData validation     │
-│  - Theme-aware UI         ├───────►│  - /api/faceswap endpoint  │
+│  - Dark UI · 4 screens    ├───────►│  - /api/faceswap endpoint  │
 │  - Image upload + prompt  │  multipart  - provider abstraction  │
 └──────────────────────────┘        └─────────────┬─────────────┘
                                                    │
@@ -25,10 +25,27 @@ AI face-swap provider.
                                           └──────────────────┘
 ```
 
-| Path          | Stack                                   | Responsibility                          |
-| ------------- | --------------------------------------- | --------------------------------------- |
-| `apps/web`    | Next.js 14 (App Router), TS, Tailwind   | Mini App UI, Telegram SDK integration   |
-| `apps/server` | Express, TS, Multer, Zod                | Auth, file handling, AI provider calls  |
+| Path          | Stack                                          | Responsibility                          |
+| ------------- | ---------------------------------------------- | --------------------------------------- |
+| `apps/web`    | Next.js 14 (App Router), TS, Tailwind, lucide  | Mini App UI, Telegram SDK integration   |
+| `apps/server` | Express, TS, Multer, Zod                       | Auth, file handling, AI provider calls  |
+
+### Front-end UI
+
+The Mini App uses a dark, cinematic design system inspired by LumiPic (visual
+style only — no proprietary brand assets). It follows a three-layer shell —
+fixed header pills, a scrollable content area, and a sticky bottom navigation —
+across four screens:
+
+- **Create** — multi-photo upload, template image, category/gender selectors,
+  prompt, a quantity stepper, and a sticky "Generate" CTA wired to the face-swap
+  API.
+- **Gallery** — generated results as selfie/result bundle cards (with empty
+  state) and per-item download.
+- **Settings** — Telegram user profile and a support action.
+- **Shop** — demo gem packs (local balance, no real charges).
+
+Key UI building blocks live in `apps/web/src/components/{layout,ui,screens}`.
 
 ## Prerequisites
 

@@ -1,5 +1,5 @@
-import { FaceSwapApp } from '@/components/FaceSwapApp';
+import { App } from '@/components/App';
 
 export default function HomePage() {
-  return <FaceSwapApp />;
+  return <App />;
 }

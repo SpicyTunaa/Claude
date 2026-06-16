@@ -3,19 +3,31 @@
 @tailwind utilities;
 
 :root {
-  /* Sensible fallbacks; overridden at runtime by Telegram theme params. */
-  --tg-theme-bg-color: #ffffff;
-  --tg-theme-text-color: #000000;
-  --tg-theme-hint-color: #999999;
-  --tg-theme-link-color: #2481cc;
-  --tg-theme-button-color: #2481cc;
-  --tg-theme-button-text-color: #ffffff;
-  --tg-theme-secondary-bg-color: #f1f1f1;
+  color-scheme: dark;
+  /* Telegram safe-area insets (newer clients expose these). Fall back to the
+     CSS env() insets so the layout never collides with system UI. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 html,
 body {
-  background-color: var(--tg-theme-bg-color);
-  color: var(--tg-theme-text-color);
+  background-color: #050816;
+  color: #f5f7fa;
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Thin, unobtrusive scrollbars to match the cinematic surfaces. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
 }
