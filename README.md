@@ -39,13 +39,23 @@ AI face-swap provider.
 
 ## Getting started
 
+First clone the repo and `cd` into it — all commands below must run from the
+project root, **not** your home directory:
+
+```bash
+git clone https://github.com/SpicyTunaa/Claude.git
+cd Claude
+git checkout claude/telegram-mini-app-faceswap-ayxbec
+```
+
+### macOS / Linux
+
 ```bash
 # 1. Install all workspaces
 npm install
 
-# 2. Configure the backend
+# 2. Configure the backend (then edit the file to set BOT_TOKEN)
 cp apps/server/.env.example apps/server/.env
-#   -> set BOT_TOKEN. Leave FACE_SWAP_PROVIDER=mock for now.
 
 # 3. Configure the frontend
 cp apps/web/.env.example apps/web/.env.local
@@ -53,6 +63,22 @@ cp apps/web/.env.example apps/web/.env.local
 # 4. Run both apps (web on :3000, server on :4000)
 npm run dev
 ```
+
+### Windows (cmd)
+
+`cp` does not exist in `cmd`; use `copy` instead:
+
+```cmd
+npm install
+copy apps\server\.env.example apps\server\.env
+copy apps\web\.env.example apps\web\.env.local
+npm run dev
+```
+
+In **PowerShell**, use `Copy-Item apps\server\.env.example apps\server\.env`.
+
+After copying, open `apps/server/.env` and set `BOT_TOKEN`. Leave
+`FACE_SWAP_PROVIDER=mock` for now.
 
 ### Local development without Telegram
 
