@@ -500,46 +500,66 @@ export default function CinemaReel({ className }: { className?: string }) {
     };
 
     let timelineCompletedOnce = false;
+    // Self-sufficient entrance finisher. Runs either from the GSAP timeline's
+    // onComplete OR from a setTimeout failsafe if the animation loop stalls
+    // (seen on some mobile Safari conditions). It does NOT depend on the rAF
+    // loop running: it writes the landing track + content directly, so the
+    // section can never get frozen mid-entrance behind the scanline overlay.
+    const finishEntrance = () => {
+      if (timelineCompletedOnce) return;
+      timelineCompletedOnce = true;
+      for (let i = 0; i < slideEls.length; i++) {
+        const el = slideEls[i];
+        if (el) el.style.transform = "";
+      }
+      if (blurFilterRef.current) {
+        blurFilterRef.current.setAttribute("stdDeviation", "0 0");
+      }
+      autoScrollingRef.current = false;
+      setAutoScrolling(false);
+      idxRef.current = AUTO_END_IDX;
+      prevIdxRef.current = AUTO_END_IDX;
+      targetYRef.current = topPad - AUTO_END_IDX * pitch;
+      yRef.current = targetYRef.current;
+      setActiveIdx(modN(AUTO_END_IDX));
+      maybeWrap();
+
+      // Directly land the track + reveal the landing slide's content, so it is
+      // visible even if requestAnimationFrame is throttled/paused on the device.
+      if (track) {
+        track.style.transform = `translate3d(0, ${yRef.current}px, 0)`;
+      }
+      const landing = slideRefs.current[idxRef.current];
+      if (landing) {
+        const content = landing.querySelector(
+          "[data-slide-content]",
+        ) as HTMLElement | null;
+        if (content) {
+          content.style.opacity = "1";
+          content.style.filter = "blur(0px)";
+          content.style.transform = "translate3d(0,0,0)";
+        }
+        const reveals = landing.querySelectorAll<HTMLElement>("[data-reveal]");
+        if (reveals.length) {
+          gsap.fromTo(
+            reveals,
+            { autoAlpha: 0, y: 32, filter: "blur(10px)" },
+            {
+              autoAlpha: 1,
+              y: 0,
+              filter: "blur(0px)",
+              duration: 1.0,
+              ease: "power4.out",
+              stagger: 0.07,
+            },
+          );
+        }
+      }
+    };
+
     const mainTween = gsap.timeline({
       onUpdate: onScrollUpdate,
-      onComplete: () => {
-        if (timelineCompletedOnce) return;
-        timelineCompletedOnce = true;
-        for (let i = 0; i < slideEls.length; i++) {
-          const el = slideEls[i];
-          if (el) el.style.transform = "";
-        }
-        if (blurFilterRef.current) {
-          blurFilterRef.current.setAttribute("stdDeviation", "0 0");
-        }
-        autoScrollingRef.current = false;
-        setAutoScrolling(false);
-        idxRef.current = AUTO_END_IDX;
-        prevIdxRef.current = AUTO_END_IDX;
-        targetYRef.current = topPad - AUTO_END_IDX * pitch;
-        yRef.current = targetYRef.current;
-        setActiveIdx(modN(AUTO_END_IDX));
-        maybeWrap();
-
-        const landing = slideRefs.current[idxRef.current];
-        if (landing) {
-          const reveals = landing.querySelectorAll<HTMLElement>("[data-reveal]");
-          if (reveals.length) {
-            gsap.fromTo(
-              reveals,
-              { autoAlpha: 0, y: 32, filter: "blur(10px)" },
-              {
-                autoAlpha: 1,
-                y: 0,
-                filter: "blur(0px)",
-                duration: 1.0,
-                ease: "power4.out",
-                stagger: 0.07,
-              },
-            );
-          }
-        }
-      },
+      onComplete: finishEntrance,
     });
 
     mainTween.to(
@@ -551,6 +571,20 @@ export default function CinemaReel({ className }: { className?: string }) {
       tweenObj,
       { p: 1, duration: SCROLL_TOTAL_S, ease: "power3.out" },
       0,
+    );
+
+    // Failsafe: if the GSAP ticker stalls (observed on some mobile Safari
+    // setups), a plain timer still force-finishes the entrance so the section
+    // never stays frozen behind the scanline overlay. setTimeout keeps firing
+    // even when requestAnimationFrame is throttled.
+    const entranceFailsafe = window.setTimeout(
+      () => {
+        if (!timelineCompletedOnce) {
+          mainTween.kill();
+          finishEntrance();
+        }
+      },
+      AUTO_SCROLL_MS + 1500,
     );
 
     /* ── rAF loop ── */
@@ -817,6 +851,7 @@ export default function CinemaReel({ className }: { className?: string }) {
 
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(entranceFailsafe);
       mainTween.kill();
       section.removeEventListener("wheel", onWheel);
       section.removeEventListener("pointerdown", onPointerDown);
@@ -1040,11 +1075,18 @@ function SlideFrame({
   assignRef: (el: HTMLDivElement | null) => void;
 }) {
   const initialTranslate = slotIndex * SLIDE_VH * (AUTO_SCALE_FROM - 1); // 0
+  // The slide that is centred at first paint (before any JS). Its content is
+  // shown by default so a no-JS / failed-JS load still renders a real film
+  // rather than a black screen.
+  const isInitialCenter = slotIndex === AUTO_START_IDX;
+  // NOTE: frames are visible (opacity 1) by default so the section degrades
+  // gracefully — if the client JS never loads/runs, the SSR'd markup still
+  // shows a film instead of a black screen. When JS runs, the rAF loop owns
+  // per-slide opacity from the first frame.
   const initialStyle = autoScrolling
     ? {
         transform: `translate3d(0, ${initialTranslate}dvh, 0) scale(${AUTO_SCALE_FROM})`,
         transformOrigin: "50% 50%" as const,
-        opacity: 0,
       }
     : undefined;
 
@@ -1125,11 +1167,12 @@ function SlideFrame({
           />
         </div>
 
-        {/* Content layer */}
+        {/* Content layer — visible by default for no-JS graceful degradation;
+            the rAF loop sets the real per-slide opacity once JS runs. */}
         <div
           data-slide-content
           className="absolute inset-0 will-change-[opacity,filter,transform]"
-          style={{ opacity: 0, filter: "blur(16px)" }}
+          style={{ opacity: isInitialCenter ? 1 : 0, filter: "blur(0px)" }}
         >
           <SlideContent slide={slide} onExplore={onExplore} />
         </div>
