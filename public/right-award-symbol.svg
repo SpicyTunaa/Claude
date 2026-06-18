@@ -1,0 +1,10 @@
+<svg width="28" height="44" viewBox="0 0 28 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <g fill="#000000" transform="translate(28,0) scale(-1,1)">
+    <path d="M26 2C18 4 12 10 10 20c-1 6 0 13 4 20-5-7-7-15-6-22C9 9 16 3 26 2z"/>
+    <path d="M24 7c-5 1-8 4-8 8 3-1 6-3 8-8z"/>
+    <path d="M22 13c-5 1-8 4-8 8 3-1 6-3 8-8z"/>
+    <path d="M20 20c-5 1-7 4-7 8 3-1 5-3 7-8z"/>
+    <path d="M19 27c-4 1-6 4-6 7 3-1 4-3 6-7z"/>
+    <path d="M19 34c-3 1-5 3-5 6 2-1 4-3 5-6z"/>
+  </g>
+</svg>
