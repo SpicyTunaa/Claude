@@ -1,0 +1,9 @@
+# Domain Hunter - Daily cron at 3:00 AM UTC
+# Edit paths before use
+# Install: crontab -e, then paste this line
+
+0 3 * * * /home/user/Claude/.venv/bin/python3 /home/user/Claude/cron/daily_hunt.py \
+    --seeds-file /home/user/Claude/seeds.txt \
+    --output-dir /home/user/Claude/output \
+    --notify-telegram \
+    >> /var/log/domain_hunter.log 2>&1
