@@ -1,0 +1,68 @@
+# Technology fingerprint signatures (rule-based, data-driven).
+# A rule matches if ANY of its declared conditions match:
+#   header_equals:  {name: substring}  -> substring (case-insensitive) appears in that header
+#   header_present: [name, ...]         -> header exists
+#   html_contains:  [substring, ...]    -> substring appears in the HTML (case-insensitive)
+#   script_src:     [substring, ...]    -> substring appears in any <script src>
+technologies:
+  - name: Cloudflare
+    category: cdn
+    header_present: [cf-ray]
+    header_equals: {server: cloudflare}
+  - name: Nginx
+    category: hosting
+    header_equals: {server: nginx}
+  - name: Apache
+    category: hosting
+    header_equals: {server: apache}
+  - name: Vercel
+    category: hosting
+    header_equals: {server: vercel}
+    header_present: [x-vercel-id]
+  - name: Netlify
+    category: hosting
+    header_present: [x-nf-request-id]
+  - name: WordPress
+    category: cms
+    html_contains: ['name="generator" content="wordpress', "/wp-content/", "/wp-includes/"]
+  - name: Drupal
+    category: cms
+    html_contains: ['name="generator" content="drupal']
+  - name: Ghost
+    category: cms
+    html_contains: ['name="generator" content="ghost']
+  - name: Shopify
+    category: cms
+    html_contains: ["cdn.shopify.com"]
+  - name: React
+    category: framework
+    script_src: ["react.production", "react.development", "/react"]
+    html_contains: ["data-reactroot"]
+  - name: Vue.js
+    category: framework
+    script_src: ["vue.js", "vue.min.js", "/vue@"]
+  - name: Angular
+    category: framework
+    html_contains: ["ng-version="]
+  - name: Next.js
+    category: framework
+    html_contains: ["/_next/", 'id="__next"']
+  - name: Nuxt
+    category: framework
+    html_contains: ["__nuxt", "/_nuxt/"]
+  - name: Express
+    category: framework
+    header_equals: {x-powered-by: express}
+  - name: Laravel
+    category: framework
+    header_present: [x-laravel-session]
+  - name: Django
+    category: framework
+    html_contains: ["csrfmiddlewaretoken"]
+  - name: ASP.NET
+    category: framework
+    header_present: [x-aspnet-version]
+    header_equals: {x-powered-by: asp.net}
+  - name: Google Analytics
+    category: analytics
+    script_src: ["google-analytics.com", "googletagmanager.com"]

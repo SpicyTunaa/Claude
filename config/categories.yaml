@@ -1,0 +1,27 @@
+# Configurable category vocabulary. Adding a category requires no core code changes —
+# adapters tag leads with these slugs and the engine validates against this list.
+categories:
+  - slug: website
+    label: "Website"
+  - slug: saas
+    label: "SaaS"
+  - slug: ai-tool
+    label: "AI Tool"
+  - slug: apk
+    label: "Android APK"
+  - slug: web-app
+    label: "Web Application"
+  - slug: browser-extension
+    label: "Browser Extension"
+  - slug: file-sharing
+    label: "File Sharing"
+  - slug: url-shortener
+    label: "URL Shortener"
+  - slug: streaming
+    label: "Streaming Platform"
+  - slug: api
+    label: "API"
+  - slug: developer-tool
+    label: "Developer Tool"
+  - slug: open-source
+    label: "Open Source Project"

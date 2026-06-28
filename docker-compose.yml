@@ -1,0 +1,14 @@
+# Single-service compose for the MVP (SQLite only — no external DB/queue needed).
+services:
+  leadengine:
+    build: .
+    image: leadengine:latest
+    environment:
+      # Override any config value via LEADENGINE_* env vars (see .env.example).
+      LEADENGINE_LOG_JSON: "1"
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./config:/app/config:ro
+    # Default command runs one full pass; change to e.g. ["list-sources"] to inspect.
+    command: ["run", "--once"]

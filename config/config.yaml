@@ -1,0 +1,53 @@
+# Lead Discovery & Enrichment Engine — main configuration (strict MVP).
+# All values can be overridden via environment variables prefixed with LEADENGINE_
+# (nested keys use "__", e.g. LEADENGINE_FETCHER__TIMEOUT=10).
+
+database:
+  # SQLite only for the MVP. Path is relative to the working directory.
+  url: "sqlite+pysqlite:///data/leadengine.db"
+
+fetcher:
+  timeout: 15.0
+  max_retries: 3
+  # Global politeness: max requests/second per domain (adapters may lower this).
+  default_rate_limit: 1.0
+  respect_robots: true
+  user_agents:
+    - "Mozilla/5.0 (compatible; LeadEngineBot/0.1; +https://example.com/bot)"
+    - "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) LeadEngine/0.1"
+    - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1 LeadEngine/0.1"
+
+enrichment:
+  # Fetch the lead website to extract about/contact pages, emails, socials.
+  enabled: true
+  # How long (hours) before an enriched lead is considered stale and re-enriched.
+  ttl_hours: 168  # 7 days
+
+monetization:
+  # Optional, non-blocking intelligence/tagging layer inside fingerprinting.
+  enabled: true
+  # When true, scoring may apply a small config-gated adjustment from monetization tags.
+  affect_score: false
+  score_adjustments:
+    ads: 5
+    link-lock: 8
+    subscription-SaaS: 3
+    hybrid: 4
+    unknown: 0
+
+export:
+  output_dir: "output"
+  formats: ["csv", "json"]
+
+sources:
+  # Enable/disable and tune each adapter purely via config — no core changes.
+  example:
+    enabled: true
+    rate_limit: 5.0
+    # Number of deterministic synthetic leads to generate per run (50-200 recommended).
+    count: 60
+  hackernews:
+    enabled: true
+    rate_limit: 1.0
+    # Number of "Show HN" style story pages to pull per run.
+    max_items: 50

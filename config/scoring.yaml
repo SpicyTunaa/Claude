@@ -1,0 +1,37 @@
+# Deterministic lead scoring weights. Same input -> same output.
+# The score reflects DATA QUALITY + BUSINESS FIT + OUTREACH READINESS.
+# It must NEVER represent vulnerability or security-weakness severity.
+
+# Fields that count toward "completeness" (presence => points).
+completeness_fields:
+  website: 10
+  description: 8
+  company_name: 8
+  category: 6
+  country: 4
+  owner_org: 8
+  tech_stack: 6
+
+# Contact availability points (capped).
+contact:
+  any_contact: 20
+  per_extra_contact: 5
+  max_contact_points: 35
+
+# Tech-stack signal points (presence of a detected stack => prospect is a real product).
+tech:
+  any_tech: 8
+  per_extra_tech: 2
+  max_tech_points: 16
+
+# Recency: leads discovered more recently are more actionable.
+recency:
+  days_full_points: 7      # discovered within N days => full points
+  days_zero_points: 90     # discovered more than N days ago => 0 points
+  max_points: 15
+
+# Outreach priority buckets derived from the final 0-100 score.
+priority_buckets:
+  high: 70
+  medium: 45
+  # below "medium" threshold => low

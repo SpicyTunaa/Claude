@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Project runtime artifacts
+*.db
+*.sqlite
+*.sqlite3
+/data/
+/output/
+/logs/*.log
+.env
+
+# OS
+.DS_Store

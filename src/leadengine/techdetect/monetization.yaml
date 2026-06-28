@@ -1,0 +1,41 @@
+# Monetization / ad-network signatures for the OPTIONAL, non-blocking tagging layer.
+# Each entry: name, kind (ad-network | link-locker | affiliate | payments),
+# and match conditions (script_src / html_contains substrings, case-insensitive).
+networks:
+  - name: PropellerAds
+    kind: ad-network
+    script_src: ["propellerads", "propeller-tracking", "propu.sh"]
+  - name: Monetag
+    kind: ad-network
+    script_src: ["monetag", "mtag.", "thubanoa"]
+  - name: Adsterra
+    kind: ad-network
+    script_src: ["adsterra", "a.adsterra", "highperformanceformat"]
+  - name: Adcash
+    kind: ad-network
+    script_src: ["adcash", "acscdn"]
+  - name: Google AdSense
+    kind: ad-network
+    script_src: ["pagead2.googlesyndication.com", "adsbygoogle"]
+    html_contains: ["adsbygoogle"]
+  - name: Linkvertise
+    kind: link-locker
+    script_src: ["linkvertise"]
+    html_contains: ["linkvertise.com"]
+  - name: "Work.ink"
+    kind: link-locker
+    script_src: ["work.ink"]
+    html_contains: ["work.ink"]
+  - name: Locker (generic)
+    kind: link-locker
+    html_contains: ["content-locker", "unlock-content", "cpabuild"]
+  - name: Amazon Associates
+    kind: affiliate
+    html_contains: ["amzn.to", "tag=", "amazon-adsystem.com"]
+  - name: Stripe
+    kind: payments
+    script_src: ["js.stripe.com"]
+    html_contains: ["stripe.com/v3"]
+  - name: Paddle
+    kind: payments
+    script_src: ["paddle.com", "cdn.paddle.com"]
